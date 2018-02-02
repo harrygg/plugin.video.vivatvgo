@@ -1,1 +1,1 @@
-# plugin.video.vivatvgo
+# vivago

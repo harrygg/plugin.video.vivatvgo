@@ -9,14 +9,17 @@ import urllib
 import xbmcgui
 import pickle
 import requests
-import xbmcaddon
-import xbmcplugin
 from datetime import datetime, timedelta
 from collections import OrderedDict
 from resources.lib.settings import *
 
 reload(sys)  
 sys.setdefaultencoding('utf8')
+
+cookie_file = os.path.join(profile_dir, '.cookies')
+channels_file = os.path.join(profile_dir, '.channels')
+programs_file = os.path.join(profile_dir, '.programs')
+response_file = os.path.join(profile_dir, 'last_response.txt')
 
 def save_cookies(s):
   with open(cookie_file, 'w') as f:
@@ -100,8 +103,8 @@ def get_channels():
     channels = {}
     if settings.rebuild_cache or not os.path.isfile(channels_file):
       progress_bar = xbmcgui.DialogProgressBG()
-      progress_bar.create(heading="Rebuilding cache")
-      progress_bar.update(5, "Getting channels...")
+      progress_bar.create(heading="Канали")
+      progress_bar.update(5, "Изграждане на списък с канали...")
       res = __request(get_url(base64.b64decode("QWxsQ2hhbm5lbA==")), post_data)
       if not res.json().get("channellist"):
         settings.rebuild_cache = True
@@ -113,7 +116,7 @@ def get_channels():
       p = 50
       for item in res.json()["channellist"]:
         p += 5
-        progress_bar.update(p, "Getting channels...")
+        progress_bar.update(p, "Изграждане на списък с канали...")
         if item.get("issubscribed") == "1":
           channel = {}
           i += 1
@@ -127,12 +130,10 @@ def get_channels():
       with open(channels_file, "w") as w:
         w.write(json.dumps(channels, ensure_ascii=False))
       
-      log("%s channels found" % len(channels))
       if progress_bar:
         progress_bar.close()
     else: #load channels from cache
       channels = json.load(open(channels_file))
-      log("%s channels found" % len(channels))
       
     channels = OrderedDict(sorted(channels.iteritems(), key=lambda c: c[1]['order'], reverse=False))
     log("%s channels found" % len(channels))
@@ -153,6 +154,33 @@ def get_channel(id):
         try: playpaths[0] = streams
         except: log("No playpath found for channel %s" % channel["name"], 4)
       channel["playpaths"] = playpaths
+      
+      #EPG
+      try:
+        now = datetime.now()
+        begintime = now.strftime("%Y%m%d%H%M%S")
+        post_data = {"begintime": begintime, "channelid":id, "count": 1, "offset":0, "type":2}
+        res = __request(get_url("PlayBillList"), post_data)
+        __json = res.json().get("playbilllist")[0]
+        
+        channel["desc"] = ""
+        
+        start = "%s:%s" % (__json["starttime"][8:10], __json["starttime"][11:13])
+        end = "%s:%s" % (__json["endtime"][8:10], __json["endtime"][11:13])
+        if start:
+          channel["desc"] += " %s" % start
+        if end:
+          channel["desc"] += " - %s" % end
+          
+        channel["desc"] += " %s" % __json.get("name")
+
+        if __json.get("introduce") and __json["introduce"] != "":
+          intro = __json["introduce"].replace(__json["name"], "")
+          if intro.rstrip() != "":
+            channel["desc"] += ", %s" % intro
+      except Exception as er:
+        log(er, 4)
+        
       return channel  
     log("Channel with id %s not found" % id, 4)
   except Exception as er:
@@ -167,6 +195,7 @@ def get_dates():
     date = then.strftime("%d-%m-%Y")
     dates.append(date)
   return dates
+
   
 def get_recorded_programs(id, date):
   log("Getting EPG")

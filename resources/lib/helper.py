@@ -30,8 +30,11 @@ def show_channel(id):
     channel = get_channel(id)
     if channel and len(channel["playpaths"]) > 0:
       for i in range(0, len(channel["playpaths"])):
-        li = xbmcgui.ListItem("На живо %s" % (i+1), iconImage = channel["logo"], thumbnailImage = channel["logo"])
-        li.setInfo( type = "Video", infoLabels = { "Title" : channel["name"] } )
+        li_title = "%s | НА ЖИВО %s" % (channel["name"], i+1)
+        if channel.get("desc"):
+          li_title += " | %s" % channel["desc"]
+        li = xbmcgui.ListItem(li_title, iconImage = channel.get("logo"), thumbnailImage = channel.get("logo"))
+        li.setInfo( type = "Video", infoLabels = { "Title" : li_title } )
         li.setProperty("IsPlayable", "True")
         url = channel["playpaths"][i] + pua
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li) 
@@ -87,7 +90,7 @@ def show_recording(id, mediaId, name):
     u = playpath + pua
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False) 
   else:
-    command = "Notification(%s,%s,%s)" % ("Грешка", "Не е намерен URL на видео поток. Вижте лога за подробности!".encode('utf-8'), 2000)
+    command = "Notification(%s,%s,%s)" % ("Грешка", "Не е намерен URL на видео поток!".encode('utf-8'), 2000)
     xbmc.executebuiltin(command) 
   
 def get_params():
@@ -121,20 +124,4 @@ def update(name, location, crash=None):
     p['cd'] = location
     ga('UA-79422131-12').update(p, crash)
 
-clist = []
-categories = []
 pua = base64.b64decode("fFVzZXItQWdlbnQ9RXhvUGxheWVyRGVtby8yLjAuMTMgKExpbnV4LEFuZHJvaWQgNy4wKSBFeG9QbGF5ZXJMaWIvMS41Ljg=")
-
-class Channel():
-  def __init__(self, name, id, url, logo):
-    self.name = name
-    self.id = id
-    self.url = url
-    self.logo = logo
-    
-  def serialize(self):
-    pass
-    
-  def deserialize(self):
-    with open(cookie_file) as f:
-      cookies = pickle.load(f)

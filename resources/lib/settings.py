@@ -1,15 +1,9 @@
-import os
 import xbmc
 import xbmcaddon
-import cookielib
 
 __id__ = 'plugin.video.vivatvgo'
 addon = xbmcaddon.Addon(id=__id__)
 profile_dir = xbmc.translatePath( addon.getAddonInfo('profile') )
-cookie_file = os.path.join(profile_dir, '.cookies')
-channels_file = os.path.join(profile_dir, '.channels')
-programs_file = os.path.join(profile_dir, '.programs')
-response_file = os.path.join(profile_dir, 'last_response.txt')
 cwd = xbmc.translatePath( addon.getAddonInfo('path') ).decode('utf-8')
 
 def log(msg, level=xbmc.LOGDEBUG):
@@ -19,7 +13,7 @@ def log(msg, level=xbmc.LOGDEBUG):
     xbmc.log('%s | %s' % (__id__, str(msg).encode('utf-8')), level)
   except Exception as e:
     try: 
-      xbmc.log('Logging Failure: %s' % (e), level)
+      xbmc.log('%s | Logging failure: %s' % (__id__, e), level)
     except: 
       pass
       
@@ -27,13 +21,14 @@ class Settings():
 
   def __getattr__(self, name):
     temp = addon.getSetting(name)
-    if temp in ['true', 'True']:
+    if temp.lower() == 'true':
       return True
-    if temp in ['false', 'False']:
+    elif temp.lower() == 'false':
       return False
-    if temp.isdigit():
+    elif temp.isdigit():
       return int(temp)
-    return temp
+    else:
+      return temp
 
   def __setattr__(self, name, value):
     addon.setSetting(name, str(value))

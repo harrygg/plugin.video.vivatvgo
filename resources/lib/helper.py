@@ -112,7 +112,7 @@ def get_params():
 def update(name, location, crash=None):
   lu = settings.last_update
   day = time.strftime("%d")
-  if lu == "" or lu != day:
+  if lu != day:
     settings.last_update = day
     p = {}
     p['an'] = addon.getAddonInfo('name')
@@ -125,3 +125,4 @@ def update(name, location, crash=None):
     ga('UA-79422131-12').update(p, crash)
 
 pua = base64.b64decode("fFVzZXItQWdlbnQ9RXhvUGxheWVyRGVtby8yLjAuMTMgKExpbnV4LEFuZHJvaWQgNy4wKSBFeG9QbGF5ZXJMaWIvMS41Ljg=")
+update("Init", "Categories")

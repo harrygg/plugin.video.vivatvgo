@@ -1,6 +1,7 @@
 ﻿import os
 import sys
 import xbmc
+import time
 import urllib
 import base64
 import xbmcgui
@@ -8,43 +9,41 @@ import xbmcaddon
 import xbmcplugin
 from datetime import datetime, timedelta
 from resources.lib.actions import *
-from ga import ga
 
 def show_settings():
   addon.openSettings()
 
 def show_channels():
   channels = get_channels()
-  if channels:
+  if len(channels) > 0:
     for id,c in channels.iteritems():
-      if c:
-        li = xbmcgui.ListItem(c["name"], iconImage = c["logo"], thumbnailImage = c["logo"])
-        url = "%s?id=%s&mode=show_channel" % (sys.argv[0], c["id"])
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li, True) 
+      li = xbmcgui.ListItem(c["name"], iconImage = c["logo"], thumbnailImage = c["logo"])
+      url = "%s?id=%s&mode=show_channel" % (sys.argv[0], id)
+      xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li, True) 
   else:
     li = xbmcgui.ListItem('Настройки')
     url = "%s?mode=show_settings" % sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li)  
 
 def show_channel(id):
-    channel = get_channel(id)
-    if channel and len(channel["playpaths"]) > 0:
-      for i in range(0, len(channel["playpaths"])):
-        li_title = "%s | НА ЖИВО %s" % (channel["name"], i+1)
-        if channel.get("desc"):
-          li_title += " | %s" % channel["desc"]
-        li = xbmcgui.ListItem(li_title, iconImage = channel.get("logo"), thumbnailImage = channel.get("logo"))
-        li.setInfo( type = "Video", infoLabels = { "Title" : li_title } )
-        li.setProperty("IsPlayable", "True")
-        url = channel["playpaths"][i] + pua
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li) 
+  channel = get_channel(id)
+  if channel and len(channel["playpaths"]) > 0:
+    for i in range(0, len(channel["playpaths"])):
+      li_title = "%s | НА ЖИВО %s" % (channel["name"], i+1)
+      if channel.get("desc"):
+        li_title += " | %s" % channel["desc"]
+      li = xbmcgui.ListItem(li_title, iconImage = channel.get("logo"), thumbnailImage = channel.get("logo"))
+      li.setInfo( type = "Video", infoLabels = { "Title" : li_title } )
+      li.setProperty("IsPlayable", "True")
+      url = channel["playpaths"][i] + pua
+      xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li) 
 
-      url = "%s?id=%s&mode=show_days" % (sys.argv[0], id)
-      li = xbmcgui.ListItem("Записи")
-      xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li, True)
-    else:
-      command = "Notification(%s,%s,%s)" % ("Грешка", "Не е намерен активен видео поток за канала или нямате абонамент за този канал!".encode('utf-8'), 2000)
-      xbmc.executebuiltin(command) 
+    url = "%s?id=%s&mode=show_days" % (sys.argv[0], id)
+    li = xbmcgui.ListItem("Записи")
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li, True)
+  else:
+    command = "Notification(%s,%s,%s)" % ("Грешка", "Не е намерен активен видео поток за канала или нямате абонамент за този канал!".encode('utf-8'), 2000)
+    xbmc.executebuiltin(command) 
 
 def show_days(id):
   for date in get_dates():
@@ -122,6 +121,7 @@ def update(name, location, crash=None):
     p['ev'] = '1'
     p['ul'] = xbmc.getLanguage()
     p['cd'] = location
+    from ga import ga
     ga('UA-79422131-12').update(p, crash)
 
 pua = base64.b64decode("fFVzZXItQWdlbnQ9RXhvUGxheWVyRGVtby8yLjAuMTMgKExpbnV4LEFuZHJvaWQgNy4wKSBFeG9QbGF5ZXJMaWIvMS41Ljg=")

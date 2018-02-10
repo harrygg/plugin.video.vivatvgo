@@ -9,6 +9,7 @@ import urllib
 import xbmcgui
 import pickle
 import requests
+import traceback
 from datetime import datetime, timedelta
 from collections import OrderedDict
 from resources.lib.settings import *
@@ -93,52 +94,55 @@ def login():
   return True
 
 def get_channels():
-  if login():
-    post_data = {"id": settings.subscriberId, "password": settings.subscriberPassword}
-    res = __request(get_url(base64.b64decode("U3dpdGNoUHJvZmlsZQ==")), post_data)
-    if settings.debug:
-      with open(response_file, "w") as w:
-        w.write(res.text)     
-    
-    channels = {}
-    if settings.rebuild_cache or not os.path.isfile(channels_file):
-      progress_bar = xbmcgui.DialogProgressBG()
-      progress_bar.create(heading="Канали")
-      progress_bar.update(5, "Изграждане на списък с канали...")
-      res = __request(get_url(base64.b64decode("QWxsQ2hhbm5lbA==")), post_data)
-      if not res.json().get("channellist"):
-        settings.rebuild_cache = True
-        return None
+  try:
+    if login():
+      post_data = {"id": settings.subscriberId, "password": settings.subscriberPassword}
+      res = __request(get_url(base64.b64decode("U3dpdGNoUHJvZmlsZQ==")), post_data)
+      if settings.debug:
+        with open(response_file, "w") as w:
+          w.write(res.text)     
       
-      progress_bar.update(50, "Getting channels...")
-      settings.rebuild_cache = False
-      i = 0
-      p = 50
-      for item in res.json()["channellist"]:
-        p += 5
-        progress_bar.update(p, "Изграждане на списък с канали...")
-        if item.get("issubscribed") == "1":
-          channel = {}
-          i += 1
-          channel["name"] = item["name"]
-          channel["order"] = i
-          channel["id"] = item["id"]
-          channel["mediaid"] = item["mediaid"]
-          channel["logo"] = item.get("logo").get("url")
-          channels[item["id"]] = channel
+      channels = {}
+      if settings.rebuild_cache or not os.path.isfile(channels_file):
+        progress_bar = xbmcgui.DialogProgressBG()
+        progress_bar.create(heading="Канали")
+        progress_bar.update(5, "Изграждане на списък с канали...")
+        res = __request(get_url(base64.b64decode("QWxsQ2hhbm5lbA==")), post_data)
+        if not res.json().get("channellist"):
+          settings.rebuild_cache = True
+          return None
         
-      with open(channels_file, "w") as w:
-        w.write(json.dumps(channels, ensure_ascii=False))
-      
-      if progress_bar:
-        progress_bar.close()
-    else: #load channels from cache
-      channels = json.load(open(channels_file))
-      
-    channels = OrderedDict(sorted(channels.iteritems(), key=lambda c: c[1]['order'], reverse=False))
-    log("%s channels found" % len(channels))
-    return channels
-  else:
+        progress_bar.update(50, "Getting channels...")
+        settings.rebuild_cache = False
+        i = 0
+        p = 50
+        for item in res.json()["channellist"]:
+          p += 5
+          progress_bar.update(p, "Изграждане на списък с канали...")
+          if item.get("issubscribed") == "1":
+            channel = {}
+            i += 1
+            channel["name"] = item["name"]
+            channel["order"] = i
+            channel["mediaid"] = item["mediaid"]
+            channel["logo"] = item.get("logo").get("url")
+            channels[item["id"]] = channel
+          
+        with open(channels_file, "w") as w:
+          w.write(json.dumps(channels, ensure_ascii=False))
+        
+        if progress_bar:
+          progress_bar.close()
+      else: #load channels from cache
+        channels = json.load(open(channels_file))
+        
+      channels = OrderedDict(sorted(channels.iteritems(), key=lambda c: c[1]['order'], reverse=False))
+      log("%s channels found" % len(channels))
+      return channels
+    else:
+      return None
+  except:
+    log(traceback.format_exc(sys.exc_info()), 4)
     return None
 
 def get_channel(id):
@@ -147,7 +151,7 @@ def get_channel(id):
     log("Getting channel with id %s" % id)
     channel = channels.get(id)
     if channel:
-      streams = get_stream(channel["id"], channel["mediaid"], 2, "VIDEO_CHANNEL")
+      streams = get_stream(id, channel["mediaid"], 2, "VIDEO_CHANNEL")
       playpaths = []
       try: playpaths = streams.split("|")
       except:
@@ -183,8 +187,8 @@ def get_channel(id):
         
       return channel  
     log("Channel with id %s not found" % id, 4)
-  except Exception as er:
-    log(er, 4)
+  except:
+    log(traceback.format_exc(sys.exc_info()), 4)
   return None
     
 def get_dates():

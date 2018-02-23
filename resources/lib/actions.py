@@ -12,11 +12,12 @@ import requests
 import traceback
 from datetime import datetime, timedelta
 from collections import OrderedDict
-from resources.lib.settings import *
+from kodibgcommon.utils import *
 
 reload(sys)  
 sys.setdefaultencoding('utf8')
 
+profile_dir = get_profile_dir()
 cookie_file = os.path.join(profile_dir, '.cookies')
 channels_file = os.path.join(profile_dir, '.channels')
 programs_file = os.path.join(profile_dir, '.programs')

@@ -11,18 +11,18 @@ from datetime import datetime, timedelta
 from resources.lib.actions import *
 
 def show_settings():
-  addon.openSettings()
+  settings.open()
 
 def show_channels():
   channels = get_channels()
   if len(channels) > 0:
     for id,c in channels.iteritems():
       li = xbmcgui.ListItem(c["name"], iconImage = c["logo"], thumbnailImage = c["logo"])
-      url = "%s?id=%s&mode=show_channel" % (sys.argv[0], id)
+      url = make_url({"id":id, "mode":"show_channel"})
       xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li, True) 
   else:
     li = xbmcgui.ListItem('Настройки')
-    url = "%s?mode=show_settings" % sys.argv[0]
+    url = make_url({"mode": "show_settings"})
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li)  
 
 def show_channel(id):
@@ -38,16 +38,15 @@ def show_channel(id):
       url = channel["playpaths"][i] + pua
       xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li) 
 
-    url = "%s?id=%s&mode=show_days" % (sys.argv[0], id)
+    url = make_url({"id":id, "mode":"show_days"})
     li = xbmcgui.ListItem("Записи")
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li, True)
   else:
-    command = "Notification(%s,%s,%s)" % ("Грешка", "Не е намерен активен видео поток за канала или нямате абонамент за този канал!".encode('utf-8'), 2000)
-    xbmc.executebuiltin(command) 
+    notify_error("Не е намерен активен видео поток за канала или нямате абонамент за този канал!".encode('utf-8'), 2000)
 
 def show_days(id):
   for date in get_dates():
-    url = "%s?id=%s&mode=show_recordings&date=%s" % (sys.argv[0], id, date)
+    url = make_url({"id":id, "mode":"show_recordings", "date":date})
     li = xbmcgui.ListItem(date)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li, True)  
     
@@ -75,7 +74,7 @@ def show_recordings(id, date):
       
       logo = ""
       li = xbmcgui.ListItem(name, iconImage = logo, thumbnailImage = logo)
-      url = "%s?id=%s&mode=show_recording&mediaId=%s&name=%s" % (sys.argv[0], id, mediaId, urllib.quote(name.encode("utf-8")))
+      url = make_url({"id":id,"mode":"show_recording","mediaId":mediaId,"name":urllib.quote(name.encode("utf-8"))})
       log(url)
       xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, li, True)
 
@@ -84,29 +83,12 @@ def show_recording(id, mediaId, name):
   if playpath:
     name = urllib.unquote(name)
     li = xbmcgui.ListItem(name)
-    li.setInfo( type = "Video", infoLabels = { "Title" : name} )
+    li.setInfo( type = "Video", infoLabels = { "Title" : name, "Plot": name} )
     li.setProperty("IsPlayable", str(True))
     u = playpath + pua
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False) 
   else:
-    command = "Notification(%s,%s,%s)" % ("Грешка", "Не е намерен URL на видео поток!".encode('utf-8'), 2000)
-    xbmc.executebuiltin(command) 
-  
-def get_params():
-  param = {}
-  paramstring = sys.argv[2]
-  if len(paramstring) >= 2:
-    params = sys.argv[2]
-    cleanedparams = params.replace('?','')
-    if (params[len(params)-1] == '/'):
-      params = params[0:len(params) - 2]
-    pairsofparams = cleanedparams.split('&')
-    for i in range(len(pairsofparams)):
-      splitparams = {}
-      splitparams = pairsofparams[i].split('=')
-      if (len(splitparams)) == 2:
-        param[splitparams[0]] = splitparams[1]
-  return param
+    notify_error("Не е намерен URL на видео поток!".encode('utf-8'), 2000)
 
 def update(name, location, crash=None):
   lu = settings.last_update
@@ -114,15 +96,15 @@ def update(name, location, crash=None):
   if lu != day:
     settings.last_update = day
     p = {}
-    p['an'] = addon.getAddonInfo('name')
-    p['av'] = addon.getAddonInfo('version')
+    p['an'] = get_addon_name()
+    p['av'] = get_addon_version()
     p['ec'] = 'Addon actions'
     p['ea'] = name
     p['ev'] = '1'
     p['ul'] = xbmc.getLanguage()
     p['cd'] = location
-    from ga import ga
-    ga('UA-79422131-12').update(p, crash)
+    import ga
+    ga.ga('UA-79422131-12').update(p, crash)
 
 pua = base64.b64decode("fFVzZXItQWdlbnQ9RXhvUGxheWVyRGVtby8yLjAuMTMgKExpbnV4LEFuZHJvaWQgNy4wKSBFeG9QbGF5ZXJMaWIvMS41Ljg=")
 update("Init", "Categories")

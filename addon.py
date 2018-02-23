@@ -7,7 +7,7 @@ if settings.rebuild_user_data or not settings.guid:
   settings.username = ""
   settings.password = ""
   settings.rebuild_user_data = False
-  addon.openSettings()
+  settings.open()
   settings.guid = uuid.uuid4()
 
 params = get_params()

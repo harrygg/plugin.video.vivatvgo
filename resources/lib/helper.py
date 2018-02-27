@@ -10,9 +10,6 @@ import xbmcplugin
 from datetime import datetime, timedelta
 from resources.lib.actions import *
 
-def show_settings():
-  settings.open()
-
 def show_channels():
   channels = get_channels()
   if len(channels) > 0:
@@ -106,5 +103,4 @@ def update(name, location, crash=None):
     import ga
     ga.ga('UA-79422131-12').update(p, crash)
 
-pua = base64.b64decode("fFVzZXItQWdlbnQ9RXhvUGxheWVyRGVtby8yLjAuMTMgKExpbnV4LEFuZHJvaWQgNy4wKSBFeG9QbGF5ZXJMaWIvMS41Ljg=")
 update("Init", "Categories")

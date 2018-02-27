@@ -28,6 +28,6 @@ elif mode == 'show_recordings':
 elif mode == 'show_recording':
   show_recording(id, mediaId, name)
 elif mode == 'show_settings':
-  show_settings()
+  settings.open()
 
 xbmcplugin.endOfDirectory(int(sys.argv[1]))

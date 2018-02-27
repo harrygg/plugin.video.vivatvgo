@@ -17,11 +17,14 @@ from kodibgcommon.utils import *
 reload(sys)  
 sys.setdefaultencoding('utf8')
 
-profile_dir = get_profile_dir()
-cookie_file = os.path.join(profile_dir, '.cookies')
+profile_dir   = get_profile_dir()
+cookie_file   = os.path.join(profile_dir, '.cookies')
 channels_file = os.path.join(profile_dir, '.channels')
 programs_file = os.path.join(profile_dir, '.programs')
 response_file = os.path.join(profile_dir, 'last_response.txt')
+playlist_file = os.path.join(profile_dir, 'playlist.raw.m3u')
+mapping_file  = os.path.join(get_resources_dir(), "map.json")
+pua           = base64.b64decode("fFVzZXItQWdlbnQ9RXhvUGxheWVyRGVtby8yLjAuMTMgKExpbnV4LEFuZHJvaWQgNy4wKSBFeG9QbGF5ZXJMaWIvMS41Ljg=")
 
 def save_cookies(s):
   with open(cookie_file, 'w') as f:
@@ -94,7 +97,29 @@ def login():
   
   return True
 
+def is_cache_older_than(hours=24):
+  try:
+    from datetime import datetime, timedelta
+    treshold = datetime.now() - timedelta(hours=hours)
+    modified = datetime.fromtimestamp(os.path.getmtime(channels_file))
+    if modified < treshold: #file is older than "hours"
+      return True
+  except Exception, er:
+    log(er)
+  return False
+  
+def get_map():
+  map = {}
+  log("Using map file: %s" % mapping_file)
+  try:
+    map = json.load(open(mapping_file))
+    log("map loaded with %s entries" % len(map))
+  except Exception, er:
+    log(er)
+  return map
+  
 def get_channels():
+  progress_bar = None
   try:
     if login():
       post_data = {"id": settings.subscriberId, "password": settings.subscriberPassword}
@@ -104,7 +129,7 @@ def get_channels():
           w.write(res.text)     
       
       channels = {}
-      if settings.rebuild_cache or not os.path.isfile(channels_file):
+      if settings.rebuild_cache or not os.path.isfile(channels_file) or is_cache_older_than(12):
         progress_bar = xbmcgui.DialogProgressBG()
         progress_bar.create(heading="Канали")
         progress_bar.update(5, "Изграждане на списък с канали...")
@@ -113,10 +138,12 @@ def get_channels():
           settings.rebuild_cache = True
           return None
         
+        pl = "#EXTM3U\n"
         progress_bar.update(50, "Getting channels...")
         settings.rebuild_cache = False
         i = 0
         p = 50
+        map = get_map()
         for item in res.json()["channellist"]:
           p += 5
           progress_bar.update(p, "Изграждане на списък с канали...")
@@ -128,23 +155,29 @@ def get_channels():
             channel["mediaid"] = item["mediaid"]
             channel["logo"] = item.get("logo").get("url")
             channels[item["id"]] = channel
+            ### move this out of the issubscribed check to retrieve all channels
+            ua = pua if settings.append_ua else ""
+            pl += "#EXTINF:-1 radio=\"false\" tvg-logo=\"%s\" tvg-id=\"%s\",%s\n%s%s\n" % (item.get("logo").get("url"), map.get(item["name"].decode("utf-8")), item["name"], item.get("playurl").split("|")[0], ua)
           
         with open(channels_file, "w") as w:
-          w.write(json.dumps(channels, ensure_ascii=False))
-        
-        if progress_bar:
-          progress_bar.close()
+          w.write(json.dumps(channels, ensure_ascii=False))      
+
+        with open(playlist_file, "w") as w:
+          w.write(pl)
+      
       else: #load channels from cache
         channels = json.load(open(channels_file))
         
       channels = OrderedDict(sorted(channels.iteritems(), key=lambda c: c[1]['order'], reverse=False))
       log("%s channels found" % len(channels))
       return channels
-    else:
-      return None
   except:
     log(traceback.format_exc(sys.exc_info()), 4)
-    return None
+    
+  if progress_bar:
+    progress_bar.close()
+    
+  return None
 
 def get_channel(id):
   try:

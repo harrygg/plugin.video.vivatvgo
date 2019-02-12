@@ -12,11 +12,8 @@ def show_channels():
   
   if len(channels) > 0:
     for id, c in channels.iteritems():
-      li = xbmcgui.ListItem(label = c["name"], 
-                            iconImage = c["logo"], 
-                            thumbnailImage = c["logo"])
       url = make_url({"id":id, "action":"show_channel"})
-      add_listitem_folder(li, url)
+      add_listitem_folder(c["name"], url, iconImage = c["logo"], thumbnailImage = c["logo"])
       
   else:
     li = xbmcgui.ListItem('Настройки')
@@ -28,22 +25,15 @@ def show_channel(id):
   
   if channel and len(channel["playpaths"]) > 0:
     for i in range(0, len(channel["playpaths"])):
-      li_title = "%s | НА ЖИВО %s" % (channel["name"], i+1)
+      title = "%s | НА ЖИВО %s" % (channel["name"], i+1)
   
     if channel.get("desc"):
-      li_title += " | %s" % channel["desc"]
-      li = xbmcgui.ListItem(label = li_title, 
-                            iconImage = channel.get("logo"), 
-                            thumbnailImage = channel.get("logo"))
-      li.setInfo(type="Video",
-                infoLabels={"Title":li_title})
-      li.setProperty("IsPlayable", "True")
+      title += " | %s" % channel["desc"]
       url = channel["playpaths"][i] + pua
-      add_listitem(li, url)
+      add_listitem_unresolved(title, url, iconImage = channel.get("logo"), thumbnailImage = channel.get("logo"))
 
     url = make_url({"id":id,"action":"show_days"})
-    li = xbmcgui.ListItem("Записи")
-    add_listitem_folder(li, url)
+    add_listitem_folder("Записи", url)
   
   else:
     notify_error("Не е намерен активен видео поток за канала или нямате абонамент за този канал!".encode('utf-8'), 2000)
@@ -51,8 +41,7 @@ def show_channel(id):
 def show_days(id):
   for date in get_dates():
     url = make_url({"id":id, "action":"show_recordings", "date":date})
-    li = xbmcgui.ListItem(date)
-    add_listitem_folder(li, url)
+    add_listitem_folder(date, url)
     
 def show_recordings(id, date):
   programs = get_recorded_programs(id, date)
@@ -84,24 +73,18 @@ def show_recordings(id, date):
       id = program["id"]
       try: mediaId = program["recordedMediaIds"][0]
       except: mediaId = 0
-      li = xbmcgui.ListItem(name)
       url = make_url({"id":id,
                       "action":"show_recording",
                       "mediaId":mediaId,
                       "name":urllib.quote(name.encode("utf-8"))})
-      add_listitem_folder(li, url)
+      add_listitem_unresolved(name, url)
 
 def show_recording(id, mediaId, name):
   playpath = get_stream(id, mediaId)
   
   if playpath:
     name = urllib.unquote(name)
-    li = xbmcgui.ListItem(name)
-    li.setInfo(type="Video", 
-              infoLabels={"Title":name, "Plot":name})
-    li.setProperty("IsPlayable", 'True')
-    url = playpath + pua
-    add_listitem(li, url)
+    add_listitem_resolved_url(name, playpath)
     
   else:
     notify_error("Не е намерен URL на видео поток!".encode('utf-8'), 2000)

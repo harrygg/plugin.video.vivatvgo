@@ -164,17 +164,17 @@ def get_channels():
           p += 5
           progress_bar.update(p, "Изграждане на списък с канали...")
           
-          if item.get("issubscribed") == "1":
-            channel = {}
-            i += 1
-            channel["name"] = item["name"]
-            channel["order"] = i
-            channel["mediaid"] = item["mediaid"]
-            channel["logo"] = item.get("logo").get("url")
-            channels[item["id"]] = channel
-            ### move this out of the issubscribed check to retrieve all channels
-            ua = pua if settings.append_ua else ""
-            pl += "#EXTINF:-1 radio=\"false\" tvg-logo=\"%s\" tvg-id=\"%s\",%s\n%s%s\n" % (item.get("logo").get("url"), map.get(item["name"].decode("utf-8")), item["name"], item.get("playurl").split("|")[0], ua)
+          #if item.get("issubscribed") == "1":
+          channel = {}
+          i += 1
+          channel["name"] = item["name"]
+          channel["order"] = i
+          channel["mediaid"] = item["mediaid"]
+          channel["logo"] = item.get("logo").get("url")
+          channels[item["id"]] = channel
+          ### move this out of the issubscribed check to retrieve all channels
+          ua = pua if settings.append_ua else ""
+          pl += "#EXTINF:-1 radio=\"false\" tvg-logo=\"%s\" tvg-id=\"%s\",%s\n%s%s\n" % (item.get("logo").get("url"), map.get(item["name"].decode("utf-8")), item["name"], item.get("playurl").split("|")[0], ua)
           
         with open(channels_file, "w") as w:
           w.write(json.dumps(channels, ensure_ascii=False))      

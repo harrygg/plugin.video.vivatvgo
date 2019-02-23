@@ -1,5 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 import os
+import io
 import sys
 import json
 import time
@@ -114,12 +115,13 @@ def is_cache_older_than(hours=24):
   
 def get_map():
   map = {}
-  log("Using map file: %s" % mapping_file)
+  log("Using map file: %s" % mapping_file, 2)
   try:
-    map = json.load(open(mapping_file))
-    log("map loaded with %s entries" % len(map))
+    with io.open(mapping_file, encoding='utf-8') as f:
+      map = json.load(f)
+    log("map loaded with %s entries" % len(map), 2)
   except Exception, er:
-    log(er)
+    log(er, 4)
   return map
   
 def get_channels():
@@ -146,7 +148,6 @@ def get_channels():
         w.write(res.text)     
     
     if settings.rebuild_cache or not os.path.isfile(channels_file) or is_cache_older_than(12):
-    
       progress_bar = xbmcgui.DialogProgressBG()
       progress_bar.create(heading="Канали")
       progress_bar.update(5, "Изграждане на списък с канали...")
@@ -174,7 +175,8 @@ def get_channels():
           channels[item["id"]] = channel
           ### move this out of the issubscribed check to retrieve all channels
           ua = pua if settings.append_ua else ""
-          pl += "#EXTINF:-1 radio=\"false\" tvg-logo=\"%s\" tvg-id=\"%s\",%s\n%s%s\n" % (item.get("logo").get("url"), map.get(item["name"].decode("utf-8")), item["name"], item.get("playurl").split("|")[0], ua)
+          log(item["name"].decode("utf-8"), 2)
+          pl += "#EXTINF:-1 radio=\"false\" tvg-logo=\"%s\" tvg-id=\"%s\",%s\n%s%s\n" % (item.get("logo").get("url"), map.get(item["name"].decode("utf-8"),item["name"].decode("utf-8")), item["name"], item.get("playurl").split("|")[0], ua)
           
         with open(channels_file, "w") as w:
           w.write(json.dumps(channels, ensure_ascii=False))      

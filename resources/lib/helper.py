@@ -44,6 +44,7 @@ def load_cookies():
   
 def __request(url, payload=None):
   headers = {'User-Agent': 'okhttp/2.5.0', 'USER_AGENT': 'android'}
+  # headers = {'Content-Type': 'application/json; charset=utf-8'}
   method = "POST" if payload else "GET"
   log("**************************************************")
   log("%s %s" % (method, url))
@@ -69,10 +70,14 @@ def login():
   Returns None on successful login. Otherwise it returns an error message.
   '''
   try:
-    url =  base64.b64decode("aHR0cDovL3R2Z28udml2YWNvbS5iZzo4MDgyL0VEUy9KU09OL0xvZ2luP1VzZXJJRD0lcw==") % settings.username
-    res = __request(url)
+    url =  base64.b64decode("aHR0cDovL3R2Z28udml2YWNvbS5iZy9FUEcvSlNPTi9Mb2dpbj9Vc2VySUQ9")
+    res = requests.get(url)
+    log("Response: " + res.text)
     settings.url = res.json()["epgurl"]
+    settings.epghttpsurl = res.json()["epghttpsurl"]
+    settings.enctytoken = res.json()["enctytoken"]
     update("Init", "Categories")
+    
     url = get_url(base64.b64decode("Vml2YWNvbVNTT0F1dGg="))
     post_data = {"password": settings.password, "userName": settings.username}
     res = __request(url, post_data)
@@ -91,7 +96,7 @@ def login():
     settings.checksum = res.json()[base64.b64decode("dml2YWNvbVN1YnNjcmliZXJz")][0]["checksum"]
     settings.subscriberId = res.json()[base64.b64decode("dml2YWNvbVN1YnNjcmliZXJz")][0]["subscriberId"]
 
-    post_data = {"checksum":settings.checksum,"mac":settings.guid,"subscriberId":settings.subscriberId,"terminaltype":"NoCAAndroidPhone","userName":settings.username}
+    post_data = {"checksum":settings.checksum,"mac":settings.guid,"subscriberId":settings.subscriberId,"terminaltype":"NoCAAndroidPad","userName":settings.username}
     res = __request(url, post_data)
     settings.subscriberPassword = res.json()["users"][0]["password"]
     
@@ -141,7 +146,7 @@ def get_channels():
         return []
 
     post_data = {"id": settings.subscriberId, "password": settings.subscriberPassword}
-    res = __request(get_url(base64.b64decode("U3dpdGNoUHJvZmlsZQ==")), post_data)
+    res = __request(get_url(base64.b64decode("U3dpdGNoUHJvZmlsZQ==")), post_data) #SwitchProfile
     
     if settings.debug:
       with open(response_file, "w") as w:
@@ -151,7 +156,7 @@ def get_channels():
       progress_bar = xbmcgui.DialogProgressBG()
       progress_bar.create(heading="Канали")
       progress_bar.update(5, "Изграждане на списък с канали...")
-      res = __request(get_url(base64.b64decode("QWxsQ2hhbm5lbA==")), post_data)
+      res = __request(get_url(base64.b64decode("QWxsQ2hhbm5lbA==")), post_data) #AllChannel
       
       if res.json().get("channellist"):
         pl = "#EXTM3U\n"
@@ -165,18 +170,23 @@ def get_channels():
           p += 5
           progress_bar.update(p, "Изграждане на списък с канали...")
           
-          #if item.get("issubscribed") == "1":
-          channel = {}
-          i += 1
-          channel["name"] = item["name"]
-          channel["order"] = i
-          channel["mediaid"] = item["mediaid"]
-          channel["logo"] = item.get("logo").get("url")
-          channels[item["id"]] = channel
-          ### move this out of the issubscribed check to retrieve all channels
-          ua = pua if settings.append_ua else ""
-          log(item["name"].decode("utf-8"), 2)
-          pl += "#EXTINF:-1 radio=\"false\" tvg-logo=\"%s\" tvg-id=\"%s\",%s\n%s%s\n" % (item.get("logo").get("url"), map.get(item["name"].decode("utf-8"),item["name"].decode("utf-8")), item["name"], item.get("playurl").split("|")[0], ua)
+          if item.get("issubscribed") == "1":
+            channel = {}
+            i += 1
+            channel["name"] = item["name"]
+            channel["order"] = i
+            channel["mediaid"] = item["mediaid"]
+            channel["logo"] = item.get("logo").get("url")
+            channels[item["id"]] = channel
+            ### move this out of the issubscribed check to retrieve all channels
+            ua = pua if settings.append_ua else ""
+            log(item["name"].decode("utf-8"), 2)
+            playurl = item.get("playurl")
+            if playurl:
+              if "|" in playurl:
+                playurl = playurl.split("|")[0]
+                
+            pl += "#EXTINF:-1 radio=\"false\" tvg-logo=\"%s\" tvg-id=\"%s\",%s\n%s%s\n" % (item.get("logo").get("url"), map.get(item["name"].decode("utf-8"),item["name"].decode("utf-8")), item["name"], playurl, ua)
           
         with open(channels_file, "w") as w:
           w.write(json.dumps(channels, ensure_ascii=False))      

@@ -296,7 +296,7 @@ def get_recorded_programs(id, date):
       dt = datetime.fromtimestamp(time.mktime(time.strptime(date, "%d-%m-%Y")))
       
     begintime = dt.strftime("%Y%m%d000000")
-    endtime = dt.strftime("%Y%m%d240000")
+    endtime = dt.strftime("%Y%m%d235959")
     
     post_data = {"begintime":begintime,"channelid":id,"count":"1000","endtime":endtime,"offset":0,"type":2}
     res = __request(get_url("PlayBillList"), post_data)

@@ -152,7 +152,7 @@ def get_channels():
       with open(response_file, "w") as w:
         w.write(res.text)     
     
-    if settings.rebuild_cache or not os.path.isfile(channels_file) or is_cache_older_than(12):
+    if settings.rebuild_cache or not os.path.isfile(channels_file) or is_cache_older_than(settings.refresh_interval):
       progress_bar = xbmcgui.DialogProgressBG()
       progress_bar.create(heading="Канали")
       progress_bar.update(5, "Изграждане на списък с канали...")
@@ -296,7 +296,7 @@ def get_recorded_programs(id, date):
       dt = datetime.fromtimestamp(time.mktime(time.strptime(date, "%d-%m-%Y")))
       
     begintime = dt.strftime("%Y%m%d000000")
-    endtime = dt.strftime("%Y%m%d240000")
+    endtime = dt.strftime("%Y%m%d235959")
     
     post_data = {"begintime":begintime,"channelid":id,"count":"1000","endtime":endtime,"offset":0,"type":2}
     res = __request(get_url("PlayBillList"), post_data)

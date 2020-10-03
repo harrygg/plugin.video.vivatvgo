@@ -93,8 +93,20 @@ def login():
         msg = res.json()["desc"]      
       return msg
 
-    settings.checksum = res.json()[base64.b64decode("dml2YWNvbVN1YnNjcmliZXJz")][0]["checksum"]
-    settings.subscriberId = res.json()[base64.b64decode("dml2YWNvbVN1YnNjcmliZXJz")][0]["subscriberId"]
+    vivacomSubscribers = res.json()["vivacomSubscribers"] 
+    firstActiveSubscription = None
+
+    for sub in vivacomSubscribers:
+      if sub["subscriberStatus"] == "active":
+        log("Active subscription " + sub["subscriberId"])
+        firstActiveSubscription = sub
+        break
+        
+    if (firstActiveSubscription == None):
+      return "Не е намерен активен абонамент"
+
+    settings.checksum = firstActiveSubscription["checksum"]
+    settings.subscriberId = firstActiveSubscription["subscriberId"]
 
     post_data = {"checksum":settings.checksum,"mac":settings.guid,"subscriberId":settings.subscriberId,"terminaltype":"NoCAAndroidPad","userName":settings.username}
     res = __request(url, post_data)

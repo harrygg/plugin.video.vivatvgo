@@ -6,6 +6,7 @@ from resources.lib.actions import *
 if settings.rebuild_user_data or not settings.guid:
   settings.username = ""
   settings.password = ""
+  settings.account = ""
   settings.rebuild_user_data = False
   settings.open()
   settings.guid = uuid.uuid4()

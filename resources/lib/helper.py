@@ -95,12 +95,15 @@ def login():
 
     vivacomSubscribers = res.json()["vivacomSubscribers"] 
     firstActiveSubscription = None
-
+    account = str(settings.account or "default")
+    log(" account: " + account)
+    
     for sub in vivacomSubscribers:
       if sub["subscriberStatus"] == "active":
-        log("Active subscription " + sub["subscriberId"])
+        log("Active subscription " + sub["subscriberId"] + " account: " + account)
         firstActiveSubscription = sub
-        break
+        if (account == "default" or sub["subscriberId"] == account):
+          break
         
     if (firstActiveSubscription == None):
       return "Не е намерен активен абонамент"
@@ -110,6 +113,11 @@ def login():
 
     post_data = {"checksum":settings.checksum,"mac":settings.guid,"subscriberId":settings.subscriberId,"terminaltype":"NoCAAndroidPad","userName":settings.username}
     res = __request(url, post_data)
+
+    if(res.json()["retmsg"] != "success"):
+      log("Error: " + res.json()["retmsg"])
+      return res.json()["retmsg"];
+    
     settings.subscriberPassword = res.json()["users"][0]["password"]
     
     save_cookies(session)

@@ -3,6 +3,7 @@
 	<category label="Акаунт">
 		<setting id="username" type="text" label="Потребител:" />
 		<setting id="password" type="text" option="hidden" label="Парола:" />
+		<setting id="account" type="text" label="Акаунт номер (опционално):" />
 	</category>
 	<category label="Общи">
     <!-- <setting type="sep"/> -->

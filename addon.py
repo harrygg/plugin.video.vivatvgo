@@ -2,6 +2,7 @@
 import uuid
 import xbmcplugin
 from resources.lib.actions import *
+from kodibgcommon.settings import *
 
 if settings.rebuild_user_data or not settings.guid:
   settings.username = ""

@@ -13,9 +13,9 @@ import requests
 from datetime import datetime, timedelta
 from collections import OrderedDict
 from kodibgcommon.utils import *
-
-reload(sys)  
-sys.setdefaultencoding('utf8')
+#
+# reload(sys)
+# sys.setdefaultencoding('utf8')
 
 profile_dir   = get_profile_dir()
 cookie_file   = os.path.join(profile_dir, '.cookies')
@@ -134,7 +134,7 @@ def is_cache_older_than(hours=24):
     modified = datetime.fromtimestamp(os.path.getmtime(channels_file))
     if modified < treshold: #file is older than "hours"
       return True
-  except Exception, er:
+  except Exception as er:
     log(er)
   return False
   
@@ -145,7 +145,7 @@ def get_map():
     with io.open(mapping_file, encoding='utf-8') as f:
       map = json.load(f)
     log("map loaded with %s entries" % len(map), 2)
-  except Exception, er:
+  except Exception as er:
     log(er, 4)
   return map
   
